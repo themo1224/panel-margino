@@ -2,8 +2,11 @@ import { http, HttpResponse } from 'msw'
 import type {
   AlertPrefs,
   ApiKeyItem,
+  BillingCycle,
   CostProfile,
   OverviewData,
+  PlanTier,
+  PlanUsage,
   ProductRivalDetail,
   ProductRivalRow,
   ReportSummary,
@@ -319,6 +322,20 @@ let alertPrefs: AlertPrefs = {
   sms: false,
 }
 
+export let mockPlanUsage: PlanUsage = {
+  tier: 'starter',
+  tierLabel: 'پایه (Starter)',
+  productsUsed: 48,
+  productsLimit: 50,
+  rivalRefreshInterval: 'daily',
+  rivalRefreshLabel: 'روزانه (۲۴ ساعت)',
+  autoApplyAllowed: false,
+  smsAlertsAllowed: false,
+  renewalDate: '۱۴۰۵/۰۸/۰۱',
+  daysRemaining: 12,
+  billingCycle: 'monthly',
+}
+
 const mockSeller: AuthUser = {
   id: 1,
   name: 'مریم فروشنده',
@@ -585,5 +602,71 @@ export const PricingHandlers = [
   http.put('*/api/pricing/alerts', async ({ request }) => {
     alertPrefs = (await request.json()) as AlertPrefs
     return HttpResponse.json({ status: 200, data: alertPrefs })
+  }),
+
+  // Plan & Quotas
+  http.get('*/api/pricing/plan', () =>
+    HttpResponse.json({ status: 200, data: mockPlanUsage })
+  ),
+  http.post('*/api/pricing/plan/upgrade', async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as {
+      tier?: PlanTier
+      billingCycle?: BillingCycle
+    }
+    const targetTier = body.tier || 'pro'
+    const cycle = body.billingCycle || 'monthly'
+
+    const limits: Record<
+      PlanTier,
+      {
+        limit: number
+        label: string
+        refresh: 'daily' | 'hourly' | 'priority'
+        refreshLabel: string
+        auto: boolean
+        sms: boolean
+      }
+    > = {
+      starter: {
+        limit: 50,
+        label: 'پایه (Starter)',
+        refresh: 'daily',
+        refreshLabel: 'روزانه (۲۴ ساعت)',
+        auto: false,
+        sms: false,
+      },
+      pro: {
+        limit: 500,
+        label: 'حرفه‌ای (Pro)',
+        refresh: 'hourly',
+        refreshLabel: 'ساعتی (هوشمند)',
+        auto: true,
+        sms: true,
+      },
+      business: {
+        limit: 2500,
+        label: 'تجاری (Business)',
+        refresh: 'priority',
+        refreshLabel: 'فوری و اختصاصی',
+        auto: true,
+        sms: true,
+      },
+    }
+
+    const cfg = limits[targetTier]
+    mockPlanUsage = {
+      ...mockPlanUsage,
+      tier: targetTier,
+      tierLabel: cfg.label,
+      productsLimit: cfg.limit,
+      rivalRefreshInterval: cfg.refresh,
+      rivalRefreshLabel: cfg.refreshLabel,
+      autoApplyAllowed: cfg.auto,
+      smsAlertsAllowed: cfg.sms,
+      billingCycle: cycle,
+      daysRemaining: cycle === 'yearly' ? 365 : 30,
+    }
+
+    return HttpResponse.json({ status: 200, data: mockPlanUsage })
   }),
 ]

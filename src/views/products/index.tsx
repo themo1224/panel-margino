@@ -10,7 +10,9 @@ import {
   batchApplyPrices,
   batchRefreshRivals,
   confirmRivalMatch,
+  fetchPlanUsage,
   fetchProducts,
+  PLAN_KEY,
   PRODUCTS_KEY,
 } from '@/api/pricing/pricing-api'
 import { RivalCompare } from '@/components/pricing/RivalCompare'
@@ -33,6 +35,8 @@ import { cn } from '@/lib/utils'
 import { ProductRivalDetailSheet } from '@/components/pricing/ProductRivalDetailSheet'
 import { PriceOverridePopover } from '@/components/pricing/PriceOverridePopover'
 import { BulkActionToolbar } from '@/components/pricing/BulkActionToolbar'
+import { PlanLimitBanner } from '@/components/pricing/PlanLimitBanner'
+import { PlanUpgradeDialog } from '@/components/pricing/PlanUpgradeDialog'
 
 type StatusFilter = 'all' | ProductRivalRow['rivalStatus'] | 'above_rivals'
 
@@ -293,6 +297,8 @@ function ProductMobileCard({
 
 export default function ProductsPage() {
   const { data, isLoading, error, mutate } = useSWR(PRODUCTS_KEY, fetchProducts)
+  const { data: planData } = useSWR(PLAN_KEY, fetchPlanUsage)
+  const plan = planData?.data
   const products = data?.data ?? []
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -300,6 +306,7 @@ export default function ProductsPage() {
   const [feedback, setFeedback] = useState<Record<string, string>>({})
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isBatchApplying, setIsBatchApplying] = useState(false)
   const [isBatchRefreshing, setIsBatchRefreshing] = useState(false)
@@ -505,6 +512,9 @@ export default function ProductsPage() {
         </div>
       </header>
 
+      {/* Plan Quota Alert Banner when >= 80% or at 100% cap */}
+      <PlanLimitBanner plan={plan} onUpgradeClick={() => setUpgradeOpen(true)} />
+
       {/* 4 Hero KPI Cards (Glassmorphism & Status Dots) */}
       <section
         aria-label="خلاصه آمار کاتالوگ"
@@ -513,9 +523,16 @@ export default function ProductsPage() {
         <div className="flex items-center justify-between rounded-2xl border border-border/80 bg-card p-4 shadow-sm backdrop-blur-md">
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">کل محصولات کاتالوگ</p>
-            <p className="text-2xl font-bold tabular-nums text-foreground">
-              {counts.all.toLocaleString('fa-IR')}
-            </p>
+            <div className="flex items-baseline gap-1.5">
+              <p className="text-2xl font-bold tabular-nums text-foreground">
+                {counts.all.toLocaleString('fa-IR')}
+              </p>
+              {plan && (
+                <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                  از {plan.productsLimit.toLocaleString('fa-IR')} سقف
+                </span>
+              )}
+            </div>
           </div>
           <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
             <Layers className="size-5" />
@@ -881,6 +898,9 @@ export default function ProductsPage() {
         isApplying={isBatchApplying}
         isRefreshing={isBatchRefreshing}
       />
+
+      {/* Plan Upgrade Dialog */}
+      <PlanUpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   )
 }

@@ -1,20 +1,26 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import useSWR from 'swr'
 import { formatToman } from '@/api/pricing/pricing-data'
 import {
   fetchOverview,
+  fetchPlanUsage,
   OVERVIEW_KEY,
+  PLAN_KEY,
 } from '@/api/pricing/pricing-api'
 import type { OverviewData } from '@/types/apps/pricing'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { OnboardingGuide } from '@/components/pricing/OnboardingGuide'
+import { PlanUpgradeDialog } from '@/components/pricing/PlanUpgradeDialog'
 import {
   ArrowLeft,
   CircleAlert,
   PackageSearch,
+  Rocket,
   ShieldCheck,
+  Sparkles,
   TrendingUp,
   Wallet,
 } from 'lucide-react'
@@ -72,7 +78,10 @@ function MetricCell({
 
 export default function HomePage() {
   const { data, isLoading, error } = useSWR(OVERVIEW_KEY, fetchOverview)
+  const { data: planData } = useSWR(PLAN_KEY, fetchPlanUsage)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
   const overview = data?.data
+  const plan = planData?.data
 
   if (isLoading) {
     return (
@@ -126,6 +135,86 @@ export default function HomePage() {
         productsWithRivals={overview.productsWithRivals}
         findingCount={overview.findingCount}
       />
+
+      {/* Subscription & Plan Quota Status */}
+      {plan && (
+        <section
+          aria-label="وضعیت اشتراک و سهمیه پلن"
+          className="overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="size-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Rocket className="size-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-foreground">
+                    اشتراک فعلی: {plan.tierLabel}
+                  </h3>
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] py-0 px-2 border-primary/30 text-primary"
+                  >
+                    {plan.billingCycle === 'yearly' ? 'سالانه' : 'ماهانه'}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  رصد قیمت رقبا:{' '}
+                  <strong className="text-foreground font-semibold">
+                    {plan.rivalRefreshLabel}
+                  </strong>{' '}
+                  — {plan.daysRemaining.toLocaleString('fa-IR')} روز تا پایان
+                  دوره
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              {/* Quota Progress */}
+              <div className="flex-1 sm:w-48 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">سهمیه کاتالوگ:</span>
+                  <span className="font-bold tabular-nums text-foreground">
+                    {plan.productsUsed.toLocaleString('fa-IR')} /{' '}
+                    {plan.productsLimit.toLocaleString('fa-IR')}
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      plan.productsUsed >= plan.productsLimit
+                        ? 'bg-rose-500'
+                        : plan.productsUsed / plan.productsLimit >= 0.8
+                        ? 'bg-amber-500'
+                        : 'bg-primary'
+                    )}
+                    style={{
+                      width: `${Math.min(
+                        Math.round(
+                          (plan.productsUsed / plan.productsLimit) * 100
+                        ),
+                        100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setUpgradeOpen(true)}
+                className="h-9 px-3.5 rounded-xl text-xs font-semibold gap-1.5 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
+              >
+                <Sparkles className="size-3.5" />
+                <span>ارتقای پلن</span>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section
         aria-labelledby="rival-insight-heading"
@@ -284,6 +373,9 @@ export default function HomePage() {
           </div>
         ) : null}
       </section>
+
+      {/* Plan Upgrade Dialog */}
+      <PlanUpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   )
 }

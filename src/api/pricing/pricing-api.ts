@@ -2,7 +2,10 @@ import { apiFetch } from '@/api/client'
 import type {
   AlertPrefs,
   ApiKeyItem,
+  BillingCycle,
   OverviewData,
+  PlanTier,
+  PlanUsage,
   ProductRivalRow,
   ReportSummary,
 } from '@/types/apps/pricing'
@@ -15,6 +18,8 @@ export const PRODUCTS_KEY = '/pricing/products'
 export const API_KEYS_KEY = '/pricing/api-keys'
 export const REPORTS_KEY = '/pricing/reports'
 export const ALERTS_KEY = '/pricing/alerts'
+export const PLAN_KEY = '/pricing/plan'
+export const COSTS_KEY = '/pricing/costs'
 
 export async function fetchReports(): Promise<{ data: ReportSummary }> {
   const res = await apiFetch<Envelope<ReportSummary>>(REPORTS_KEY)
@@ -148,4 +153,37 @@ export async function batchRefreshRivals(
   )
   return { data: res.data }
 }
+
+export async function fetchPlanUsage(): Promise<{ data: PlanUsage }> {
+  const res = await apiFetch<Envelope<PlanUsage>>(PLAN_KEY)
+  return { data: res.data }
+}
+
+export async function upgradePlan(
+  tier: PlanTier,
+  billingCycle: BillingCycle = 'monthly'
+): Promise<{ data: PlanUsage }> {
+  const res = await apiFetch<Envelope<PlanUsage>>(`${PLAN_KEY}/upgrade`, {
+    method: 'POST',
+    body: JSON.stringify({ tier, billingCycle }),
+  })
+  return { data: res.data }
+}
+
+export async function fetchCosts(): Promise<{ data: import('@/types/apps/pricing').CostProfile }> {
+  const res = await apiFetch<Envelope<import('@/types/apps/pricing').CostProfile>>(COSTS_KEY)
+  return { data: res.data }
+}
+
+export async function saveCosts(
+  costs: import('@/types/apps/pricing').CostProfile
+): Promise<{ data: import('@/types/apps/pricing').CostProfile }> {
+  const res = await apiFetch<Envelope<import('@/types/apps/pricing').CostProfile>>(COSTS_KEY, {
+    method: 'PUT',
+    body: JSON.stringify(costs),
+  })
+  return { data: res.data }
+}
+
+
 

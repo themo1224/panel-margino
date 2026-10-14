@@ -126,3 +126,34 @@ export interface AlertPrefs {
   email: boolean
   sms: boolean
 }
+
+export type PlanTier = 'starter' | 'pro' | 'business'
+export type BillingCycle = 'monthly' | 'yearly'
+
+export interface PlanUsage {
+  tier: PlanTier
+  tierLabel: string
+  productsUsed: number
+  productsLimit: number
+  rivalRefreshInterval: 'daily' | 'hourly' | 'priority'
+  rivalRefreshLabel: string
+  autoApplyAllowed: boolean
+  smsAlertsAllowed: boolean
+  renewalDate: string
+  daysRemaining: number
+  billingCycle: BillingCycle
+}
+
+export interface PlanTierConfig {
+  id: PlanTier
+  name: string
+  nameEn: string
+  badge?: string
+  isPopular?: boolean
+  monthlyPrice: number
+  yearlyPrice: number
+  productLimit: number
+  features: string[]
+  unavailableFeatures?: string[]
+}
+

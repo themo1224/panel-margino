@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import useSWR from 'swr'
-import { getFetcher, putFetcher } from '@/api/global-fetcher'
+import { COSTS_KEY, fetchCosts, saveCosts } from '@/api/pricing/pricing-api'
 import type { CostProfile } from '@/types/apps/pricing'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,8 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function CostsPage() {
   const { data, isLoading, error, mutate } = useSWR<{ data: CostProfile }>(
-    '/api/pricing/costs',
-    getFetcher
+    COSTS_KEY,
+    fetchCosts
   )
   const profile = data?.data
 
@@ -29,13 +29,14 @@ export default function CostsPage() {
     setSaving(true)
     setSaved(false)
     try {
-      await putFetcher('/api/pricing/costs', form)
+      await saveCosts(form)
       await mutate()
       setSaved(true)
     } finally {
       setSaving(false)
     }
   }
+
 
   function setNumber(key: keyof CostProfile, value: string) {
     if (!form) return
