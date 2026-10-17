@@ -14,6 +14,7 @@ import {
   fetchProducts,
   PLAN_KEY,
   PRODUCTS_KEY,
+  toggleProductAutoApply,
 } from '@/api/pricing/pricing-api'
 import { RivalCompare } from '@/components/pricing/RivalCompare'
 import type { ProductRivalRow } from '@/types/apps/pricing'
@@ -30,7 +31,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PackageSearch, Radio, Search, CheckCircle2, AlertTriangle, Layers, Clock, Eye } from 'lucide-react'
+import {
+  PackageSearch,
+  Radio,
+  Search,
+  CheckCircle2,
+  AlertTriangle,
+  Layers,
+  Clock,
+  Eye,
+  Zap,
+  ShieldOff,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ProductRivalDetailSheet } from '@/components/pricing/ProductRivalDetailSheet'
 import { PriceOverridePopover } from '@/components/pricing/PriceOverridePopover'
@@ -203,9 +215,21 @@ function ProductMobileCard({
               <h3 className="text-sm font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">
                 {row.name}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">
-                {row.sku}
-              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-xs text-muted-foreground font-mono" dir="ltr">
+                  {row.sku}
+                </p>
+                {row.autoApplyExcluded ? (
+                  <span className="text-[10px] font-medium text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                    مستثنی از اعمال خودکار
+                  </span>
+                ) : row.autoApplyEligible ? (
+                  <span className="text-[10px] font-medium text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    <Zap className="size-2.5" />
+                    اعمال خودکار فعال
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -430,6 +454,29 @@ export default function ProductsPage() {
     } catch {
       toast.error('خطا در اعمال قیمت سفارشی.')
       throw new Error('Apply price failed')
+    }
+  }
+
+  async function handleToggleAutoApply(product: ProductRivalRow) {
+    const nextExcluded = !product.autoApplyExcluded
+    try {
+      const res = await toggleProductAutoApply(product.id, nextExcluded)
+      await mutate(
+        (current) => {
+          if (!current) return current
+          return {
+            data: current.data.map((p) => (p.id === product.id ? res.data : p)),
+          }
+        },
+        { revalidate: false }
+      )
+      toast.success(
+        nextExcluded
+          ? `محصول «${product.name}» از اعمال خودکار قیمت مستثنی شد.`
+          : `محصول «${product.name}» تحت پوشش اعمال خودکار قرار گرفت.`
+      )
+    } catch {
+      toast.error('تغییر وضعیت اعمال خودکار ناموفق بود.')
     }
   }
 
@@ -756,11 +803,38 @@ export default function ProductsPage() {
                             <div className="font-semibold text-sm leading-snug text-foreground line-clamp-1 group-hover:text-primary transition-colors">
                               {row.name}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[11px] text-muted-foreground font-mono" dir="ltr">
                                 {row.sku}
                               </span>
                               {statusBadge(row.rivalStatus)}
+                              {row.autoApplyExcluded ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10 gap-0.5 cursor-pointer hover:bg-amber-500/20"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    void handleToggleAutoApply(row)
+                                  }}
+                                  title="کلیک کنید تا مجدداً تحت پوشش اعمال خودکار قرار گیرد"
+                                >
+                                  <ShieldOff className="size-2.5" />
+                                  استثنا از اعمال خودکار
+                                </Badge>
+                              ) : row.autoApplyEligible ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-0.5 cursor-pointer hover:bg-emerald-500/20"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    void handleToggleAutoApply(row)
+                                  }}
+                                  title="اعمال خودکار فعال است (کلیک جهت استثنا کردن)"
+                                >
+                                  <Zap className="size-2.5" />
+                                  اعمال خودکار فعال
+                                </Badge>
+                              ) : null}
                             </div>
                           </div>
                         </div>

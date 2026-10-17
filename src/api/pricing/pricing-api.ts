@@ -2,6 +2,7 @@ import { apiFetch } from '@/api/client'
 import type {
   AlertPrefs,
   ApiKeyItem,
+  AutoApplySettings,
   BillingCycle,
   OverviewData,
   PlanTier,
@@ -20,6 +21,7 @@ export const REPORTS_KEY = '/pricing/reports'
 export const ALERTS_KEY = '/pricing/alerts'
 export const PLAN_KEY = '/pricing/plan'
 export const COSTS_KEY = '/pricing/costs'
+export const AUTO_APPLY_KEY = '/pricing/auto-apply'
 
 export async function fetchReports(): Promise<{ data: ReportSummary }> {
   const res = await apiFetch<Envelope<ReportSummary>>(REPORTS_KEY)
@@ -181,6 +183,47 @@ export async function saveCosts(
   const res = await apiFetch<Envelope<import('@/types/apps/pricing').CostProfile>>(COSTS_KEY, {
     method: 'PUT',
     body: JSON.stringify(costs),
+  })
+  return { data: res.data }
+}
+
+export async function fetchAutoApplySettings(): Promise<{ data: AutoApplySettings }> {
+  const res = await apiFetch<Envelope<AutoApplySettings>>(AUTO_APPLY_KEY)
+  return { data: res.data }
+}
+
+export async function saveAutoApplySettings(
+  settings: Partial<AutoApplySettings>
+): Promise<{ data: AutoApplySettings }> {
+  const res = await apiFetch<Envelope<AutoApplySettings>>(AUTO_APPLY_KEY, {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  })
+  return { data: res.data }
+}
+
+export async function toggleProductAutoApply(
+  productId: string,
+  excluded: boolean
+): Promise<{ data: ProductRivalRow }> {
+  const res = await apiFetch<Envelope<ProductRivalRow>>(
+    `${PRODUCTS_KEY}/${productId}/toggle-auto-apply`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ excluded }),
+    }
+  )
+  return { data: res.data }
+}
+
+export async function runAutoApplyNow(): Promise<{
+  data: { applied_count: number; skipped_count: number; applied_ids: number[] }
+}> {
+  const res = await apiFetch<
+    Envelope<{ applied_count: number; skipped_count: number; applied_ids: number[] }>
+  >(`${AUTO_APPLY_KEY}/run-now`, {
+    method: 'POST',
+    body: JSON.stringify({}),
   })
   return { data: res.data }
 }

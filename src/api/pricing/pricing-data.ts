@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import type {
   AlertPrefs,
   ApiKeyItem,
+  AutoApplySettings,
   BillingCycle,
   CostProfile,
   OverviewData,
@@ -669,4 +670,61 @@ export const PricingHandlers = [
 
     return HttpResponse.json({ status: 200, data: mockPlanUsage })
   }),
+
+  http.get('*/pricing/auto-apply', () => {
+    return HttpResponse.json({
+      status: 200,
+      data: mockAutoApplySettings,
+    })
+  }),
+
+  http.put('*/pricing/auto-apply', async ({ request }) => {
+    const body = (await request.json()) as Partial<AutoApplySettings>
+    mockAutoApplySettings = {
+      ...mockAutoApplySettings,
+      ...body,
+    }
+    return HttpResponse.json({
+      status: 200,
+      data: mockAutoApplySettings,
+    })
+  }),
+
+  http.post('*/pricing/products/:id/toggle-auto-apply', async ({ params, request }) => {
+    const id = String(params.id)
+    const body = (await request.json()) as { excluded: boolean }
+    const product = mockProducts.find((p) => p.id === id)
+    if (product) {
+      product.autoApplyExcluded = body.excluded
+    }
+    return HttpResponse.json({
+      status: 200,
+      data: product ?? null,
+    })
+  }),
+
+  http.post('*/pricing/auto-apply/run-now', () => {
+    return HttpResponse.json({
+      status: 200,
+      data: {
+        applied_count: 5,
+        skipped_count: 1,
+        applied_ids: [1, 2, 3],
+      },
+    })
+  }),
 ]
+
+export let mockAutoApplySettings: AutoApplySettings = {
+  enabled: true,
+  maxDropPercent: 15,
+  onlyFreshRivals: true,
+  notifyDaily: true,
+  lastRunAt: '2026-10-16T12:00:00Z',
+  planAllowed: true,
+  planCode: 'pro',
+  eligibleProductsCount: 14,
+  excludedProductsCount: 2,
+  totalProductsCount: 18,
+}
+

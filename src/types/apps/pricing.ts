@@ -32,6 +32,22 @@ export interface ProductRivalRow {
   rivalStatus: RivalStatus
   lastRivalAt: string | null
   pendingRivalMatch?: PendingRivalMatch | null
+  autoApplyExcluded?: boolean
+  autoApplyEligible?: boolean
+  lastAutoAppliedAt?: string | null
+}
+
+export interface AutoApplySettings {
+  enabled: boolean
+  maxDropPercent: number
+  onlyFreshRivals: boolean
+  notifyDaily: boolean
+  lastRunAt: string | null
+  planAllowed: boolean
+  planCode: string
+  eligibleProductsCount: number
+  excludedProductsCount: number
+  totalProductsCount: number
 }
 
 export interface CompetitorItem {
@@ -50,7 +66,7 @@ export interface PriceHistoryItem {
   date: string
   oldPrice: number
   newPrice: number
-  source: 'recommendation' | 'manual'
+  source: 'recommendation' | 'manual' | 'auto'
 }
 
 export interface ProductRivalDetail extends ProductRivalRow {
