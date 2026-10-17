@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 
 # Build output
 dist/
@@ -17,14 +19,29 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Editor / OS
+# Testing & Reports
+coverage/
+playwright-report/
+test-results/
+
+# TypeScript Build Info
+*.tsbuildinfo
+
+# Vite Cache
+.vite/
+
+# Editor & AI Tooling
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
 .idea/
+.cursor/
+.claude/
+*.swp
+*.swo
+
+# OS Files
 .DS_Store
 Thumbs.db
-*.swp
-
-# Vite
-.vite/
+ehthumbs.db
+[Dd]esktop.ini

@@ -131,7 +131,7 @@ export default function CostsPage() {
               </div>
 
               {saved ? (
-                <p className="text-sm text-primary">پروفایل هزینه ذخیره شد (شبیه‌سازی).</p>
+                <p className="text-sm text-primary">پروفایل هزینه با موفقیت ذخیره شد.</p>
               ) : null}
 
               <Button type="submit" disabled={saving}>
